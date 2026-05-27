@@ -43,6 +43,9 @@ public class ChatRoom {
     @Column(nullable = false)
     private Boolean isDeleted;
 
+    @Column(nullable = false)
+    private Boolean isActive;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -57,6 +60,7 @@ public class ChatRoom {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         isDeleted = false;
+        isActive = true;
         currentMembers = 0;
     }
 

@@ -37,9 +37,13 @@ public class ChatRoomMember {
     @Column(nullable = false)
     private Boolean isActive;
 
+    @Column(nullable = false)
+    private Boolean isConnected;
+
     @PrePersist
     protected void onCreate() {
         joinedAt = LocalDateTime.now();
         isActive = true;
+        isConnected = false;
     }
 }

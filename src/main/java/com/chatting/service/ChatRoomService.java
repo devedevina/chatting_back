@@ -77,6 +77,10 @@ public class ChatRoomService {
             throw new IllegalArgumentException("Chat room is deleted");
         }
 
+        if (!chatRoom.getIsActive()) {
+            throw new IllegalArgumentException("Chat room is not active");
+        }
+
         if (chatRoom.getCurrentMembers() >= chatRoom.getMaxMembers()) {
             throw new IllegalArgumentException("Chat room is full");
         }
@@ -120,6 +124,10 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Chat room not found"));
         chatRoom.setCurrentMembers(Math.max(0, chatRoom.getCurrentMembers() - 1));
+
+        if (chatRoom.getCurrentMembers() == 0) {
+            chatRoom.setIsActive(false);
+        }
         chatRoomRepository.save(chatRoom);
     }
 
@@ -141,6 +149,42 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Chat room not found"));
         return toResponseDto(chatRoom);
+    }
+
+    @Transactional
+    public void handleUserConnected(Long roomId, String username) {
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat room not found"));
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        ChatRoomMember member = chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Not in chat room"));
+
+        member.setIsConnected(true);
+        chatRoomMemberRepository.save(member);
+    }
+
+    @Transactional
+    public void handleUserDisconnected(Long roomId, String username) {
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat room not found"));
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        ChatRoomMember member = chatRoomMemberRepository.findByChatRoomIdAndUserId(roomId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Not in chat room"));
+
+        member.setIsConnected(false);
+        chatRoomMemberRepository.save(member);
+
+        if (!chatRoomMemberRepository.hasAnyConnectedActiveMember(roomId)) {
+            chatRoom.setIsDeleted(true);
+            chatRoom.setDeletedAt(java.time.LocalDateTime.now());
+            chatRoomRepository.save(chatRoom);
+        }
     }
 
     private ChatRoomResponseDto toResponseDto(ChatRoom chatRoom) {

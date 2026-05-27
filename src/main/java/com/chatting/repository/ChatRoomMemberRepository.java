@@ -20,4 +20,10 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     @Query(value = "SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM ChatRoomMember m WHERE m.chatRoom.id = ?1 AND m.user.id = ?2")
     boolean existsByChatRoomIdAndUserId(Long chatRoomId, Long userId);
+
+    @Query(value = "SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM ChatRoomMember m WHERE m.chatRoom.id = ?1 AND m.isActive = true AND m.isConnected = true")
+    boolean hasAnyConnectedActiveMember(Long chatRoomId);
+
+    @Query(value = "SELECT m FROM ChatRoomMember m WHERE m.chatRoom.id = ?1 AND m.isActive = true AND m.isConnected = true")
+    List<ChatRoomMember> findConnectedActiveMembersByRoomId(Long chatRoomId);
 }
