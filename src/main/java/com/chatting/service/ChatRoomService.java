@@ -5,13 +5,17 @@ import com.chatting.domain.ChatRoomMember;
 import com.chatting.domain.User;
 import com.chatting.dto.ChatRoomRequestDto;
 import com.chatting.dto.ChatRoomResponseDto;
+import com.chatting.dto.WebSocketMessageDto;
 import com.chatting.repository.ChatRoomMemberRepository;
 import com.chatting.repository.ChatRoomRepository;
 import com.chatting.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +26,8 @@ public class ChatRoomService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SimpMessagingTemplate messagingTemplate;
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public List<ChatRoomResponseDto> getPublicChatRooms() {
         return chatRoomRepository.findAllPublicRooms().stream()
@@ -65,7 +71,24 @@ public class ChatRoomService {
                 .build();
         chatRoomMemberRepository.save(member);
 
+        publishChatRoomCreatedMessage(savedRoom, creator);
+
         return toResponseDto(savedRoom);
+    }
+
+    private void publishChatRoomCreatedMessage(ChatRoom chatRoom, User creator) {
+        WebSocketMessageDto systemMessage = WebSocketMessageDto.builder()
+                .roomId(chatRoom.getId())
+                .senderNickname("System")
+                .content(creator.getNickname() + " created the chat room")
+                .messageType("SYSTEM")
+                .timestamp(LocalDateTime.now().format(formatter))
+                .build();
+
+        messagingTemplate.convertAndSend(
+                "/topic/chat/" + chatRoom.getId(),
+                systemMessage
+        );
     }
 
     @Transactional

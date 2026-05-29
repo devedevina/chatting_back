@@ -12,8 +12,11 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
+
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 @Controller
 @RequiredArgsConstructor
@@ -34,8 +37,11 @@ public class ChatController {
         if (headerAccessor.getSessionAttributes() != null) {
             username = (String) headerAccessor.getSessionAttributes().get("username");
         }
-        if (username == null) {
-            username = message.getSenderNickname();
+
+        Principal principal = headerAccessor.getUser();
+
+        if (username == null && principal != null) {
+            username = principal.getName();
         }
 
         ChatMessageDto savedMessage = chatMessageService.sendMessage(roomId, message.getContent(), username);

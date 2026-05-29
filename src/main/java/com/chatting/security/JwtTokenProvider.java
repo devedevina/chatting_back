@@ -4,11 +4,15 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class JwtTokenProvider {
@@ -58,5 +62,29 @@ public class JwtTokenProvider {
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    public Authentication authenticate(String token) {
+        // Bearer 제거
+        token = token.replace("Bearer ", "");
+
+        // JWT 검증
+        if (!validateToken(token)) {
+            throw new RuntimeException("유효하지 않은 토큰");
+        }
+
+        // 사용자 이름 추출
+        String username = getUsernameFromToken(token);
+
+        // 권한 생성
+        List<GrantedAuthority> authorities =
+                List.of(new SimpleGrantedAuthority("ROLE_USER"));
+
+        // Authentication 생성
+        return new UsernamePasswordAuthenticationToken(
+                username,
+                null,
+                authorities
+        );
     }
 }
