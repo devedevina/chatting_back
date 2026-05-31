@@ -211,6 +211,7 @@ public class ChatRoomService {
     }
 
     private ChatRoomResponseDto toResponseDto(ChatRoom chatRoom) {
+        Integer activeMembersCount = chatRoomMemberRepository.countActiveMembersByRoomId(chatRoom.getId());
         return ChatRoomResponseDto.builder()
                 .id(chatRoom.getId())
                 .title(chatRoom.getTitle())
@@ -218,7 +219,7 @@ public class ChatRoomService {
                 .creatorNickname(chatRoom.getCreator().getNickname())
                 .isPublic(chatRoom.getIsPublic())
                 .isPasswordProtected(chatRoom.getPassword() != null && !chatRoom.getPassword().isEmpty())
-                .currentMembers(chatRoom.getCurrentMembers())
+                .currentMembers(activeMembersCount != null ? activeMembersCount : 0)
                 .maxMembers(chatRoom.getMaxMembers())
                 .createdAt(chatRoom.getCreatedAt())
                 .build();
